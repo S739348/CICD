@@ -20,11 +20,11 @@ FROM openjdk:21-jre-slim
 # Set the working directory
 WORKDIR /app
 
-# Copy the JAR file from the build stage
-COPY --from=build /app/target/*.jar app.jar
+# Copy the JAR file from the build stage and rename it to CICD.jar
+COPY --from=build /app/target/*.jar CICD.jar
 
 # Expose the port the app runs on
 EXPOSE 8080
 
 # Run the application
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "CICD.jar"]
