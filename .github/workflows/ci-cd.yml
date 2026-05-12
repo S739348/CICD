@@ -57,12 +57,53 @@ jobs:
         push: true
         tags: ${{ steps.repo.outputs.image }}:latest
 
-  deploy:
+  deploy-dev:
     runs-on: ubuntu-latest
     needs: build-and-push-docker
+    environment: dev
 
     steps:
-    - name: Deploy to EC2
+    - name: Deploy to Dev EC2
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.DEV_EC2_HOST }}
+        username: ${{ secrets.DEV_EC2_USER }}
+        key: ${{ secrets.DEV_EC2_SSH_KEY }}
+        script: |
+          IMAGE=$(echo "ghcr.io/${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GHCR_PAT }}
+          docker pull $IMAGE:latest
+          docker stop cicd-app || true
+          docker rm cicd-app || true
+          docker run -d --name cicd-app -p 8080:8080 $IMAGE:latest
+
+  deploy-int:
+    runs-on: ubuntu-latest
+    needs: deploy-dev
+    environment: int
+
+    steps:
+    - name: Deploy to Int EC2
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.INT_EC2_HOST }}
+        username: ${{ secrets.INT_EC2_USER }}
+        key: ${{ secrets.INT_EC2_SSH_KEY }}
+        script: |
+          IMAGE=$(echo "ghcr.io/${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GHCR_PAT }}
+          docker pull $IMAGE:latest
+          docker stop cicd-app || true
+          docker rm cicd-app || true
+          docker run -d --name cicd-app -p 8080:8080 $IMAGE:latest
+
+  deploy-prod:
+    runs-on: ubuntu-latest
+    needs: deploy-int
+    environment: production
+
+    steps:
+    - name: Deploy to Prod EC2
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.EC2_HOST }}
