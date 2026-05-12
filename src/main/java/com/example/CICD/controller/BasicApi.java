@@ -10,6 +10,10 @@ public class BasicApi {
     public String hello() {
         return "Hello, World!";
     }
+    @GetMapping("/info")
+    public String info() {
+        return "testing cicd pipeline";
+    }
 
 
 
